@@ -1,4 +1,6 @@
 import os
+print("DEBUG: API KEY from env:", os.getenv("OPENAI_API_KEY"))
+
 import logging
 from typing import List, Dict, Any, Optional
 import faiss

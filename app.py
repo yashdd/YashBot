@@ -28,7 +28,19 @@ logger.info("Flask app initialized in debug mode")
 vector_store = VectorStore()
 
 # Initialize RAG chatbot
+HARD_CODED_URL = "https://yashdd.github.io/Portfolio-Website/"
+documents = website_to_documents(HARD_CODED_URL, max_pages=5, max_depth=1)
+
+if documents:
+    vector_store.add_documents(documents)
+    logger.info(f"Loaded {len(documents)} documents from hardcoded website.")
+else:
+    logger.warning(f"Failed to load documents from {HARD_CODED_URL}")
+
+# Initialize RAG chatbot
 rag_chatbot = RAGChatbot(vector_store)
+rag_chatbot.initialize_rag_chain()
+# rag_chatbot = RAGChatbot(vector_store)
 
 @app.route("/")
 def index():
@@ -156,48 +168,49 @@ def test_page():
     logger.info("Test endpoint called")
     return "RAG Chatbot test page - Server is running!"
 
-@app.route("/process-website", methods=["POST"])
-def process_website():
-    """Process a website URL and add its content to the knowledge base"""
-    try:
-        data = request.json
-        url = data.get("url")
-        max_pages = data.get("max_pages", 5)  # Default to 5 pages
-        max_depth = data.get("max_depth", 1)  # Default to depth 1 (just the page)
+# @app.route("/process-website", methods=["POST"])
+# def process_website():
+#     """Process a website URL and add its content to the knowledge base"""
+#     try:
+#         url = "https://yashdd.github.io/Portfolio-Website/"
+#         data = request.json
+#         url = data.get("url")
+#         max_pages = data.get("max_pages", 5)  # Default to 5 pages
+#         max_depth = data.get("max_depth", 1)  # Default to depth 1 (just the page)
         
-        logger.debug(f"Received website processing request for URL: {url}")
+#         logger.debug(f"Received website processing request for URL: {url}")
         
-        if not url:
-            return jsonify({"error": "URL is required"}), 400
+#         if not url:
+#             return jsonify({"error": "URL is required"}), 400
         
-        # Convert website to documents
-        documents = website_to_documents(url, max_pages=max_pages, max_depth=max_depth)
+#         # Convert website to documents
+#         documents = website_to_documents(url, max_pages=max_pages, max_depth=max_depth)
         
-        if not documents:
-            logger.warning(f"No content extracted from website: {url}")
-            return jsonify({
-                "error": "Could not extract content from the provided URL",
-                "url": url
-            }), 400
+#         if not documents:
+#             logger.warning(f"No content extracted from website: {url}")
+#             return jsonify({
+#                 "error": "Could not extract content from the provided URL",
+#                 "url": url
+#             }), 400
         
-        # Add documents to vector store
-        vector_store.add_documents(documents)
+#         # Add documents to vector store
+#         vector_store.add_documents(documents)
         
-        # Re-initialize the RAG chain
-        rag_chatbot.initialize_rag_chain()
+#         # Re-initialize the RAG chain
+#         rag_chatbot.initialize_rag_chain()
         
-        page_urls = [doc.metadata.get("source") for doc in documents]
-        unique_urls = list(set(page_urls))
+#         page_urls = [doc.metadata.get("source") for doc in documents]
+#         unique_urls = list(set(page_urls))
         
-        logger.info(f"Successfully processed website {url} with {len(documents)} document chunks from {len(unique_urls)} pages")
+#         logger.info(f"Successfully processed website {url} with {len(documents)} document chunks from {len(unique_urls)} pages")
         
-        return jsonify({
-            "message": f"Successfully processed website content", 
-            "url": url,
-            "pages_processed": len(unique_urls),
-            "chunks_created": len(documents),
-            "processed_urls": unique_urls[:10]  # Return first 10 URLs (limit response size)
-        })
-    except Exception as e:
-        logger.error(f"Error processing website: {str(e)}")
-        return jsonify({"error": f"Error processing website: {str(e)}"}), 500
+#         return jsonify({
+#             "message": f"Successfully processed website content", 
+#             "url": url,
+#             "pages_processed": len(unique_urls),
+#             "chunks_created": len(documents),
+#             "processed_urls": unique_urls[:10]  # Return first 10 URLs (limit response size)
+#         })
+#     except Exception as e:
+#         logger.error(f"Error processing website: {str(e)}")
+#         return jsonify({"error": f"Error processing website: {str(e)}"}), 500
