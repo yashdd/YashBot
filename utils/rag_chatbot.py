@@ -32,9 +32,9 @@ class RAGChatbot:
             # do not change this unless explicitly requested by the user
             self.llm = ChatOpenAI(
                 openai_api_key=api_key,
-                model="gpt-4o", 
-                temperature=0.7
-            )
+                model="ft:gpt-3.5-turbo-1106:personal::BTbZkhRd", 
+                temperature=0.7,
+            )           
             
             # Initialize conversation memory
             self.memory = ConversationBufferMemory(
