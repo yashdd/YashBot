@@ -6,14 +6,14 @@ A Retrieval-Augmented Generation (RAG) chatbot built with Python, Flask, and Lan
 
 - **Document Processing**: Upload and process PDF, DOCX, and TXT files
 - **Website Scraping**: Extract content from websites to use as knowledge sources
-- **Vector Database**: Store and retrieve document embeddings using FAISS
+- **Vector Database**: Store and retrieve document embeddings using Pinecone
 - **Conversational Interface**: Chat interface with context-aware responses
 - **Source Tracking**: Show the source of information in responses
 
 ## Tech Stack
 
 - **Backend**: Python, Flask, Gunicorn
-- **NLP**: LangChain, OpenAI API, FAISS
+- **NLP**: LangChain, Google Gemini API, Pinecone
 - **Web Scraping**: Trafilatura
 - **Document Processing**: PyPDF, Python-DOCX
 - **Frontend**: HTML, CSS, JavaScript, Bootstrap 5
@@ -33,7 +33,8 @@ A Retrieval-Augmented Generation (RAG) chatbot built with Python, Flask, and Lan
 
 3. Set up environment variables
    ```
-   export OPENAI_API_KEY=your_openai_api_key
+   export GOOGLE_API_KEY=your_google_api_key
+   export PINECONE_API_KEY=your_pinecone_api_key
    ```
 
 4. Run the application

@@ -1,7 +1,7 @@
 import os
 from dotenv import load_dotenv
 load_dotenv()
-print("DEBUG: API KEY from env:", os.getenv("OPENAI_API_KEY"))  # for debug
+print("DEBUG: API KEY from env:", os.getenv("GOOGLE_API_KEY"))  # Changed from OPENAI_API_KEY for debug
 
 from app import app
 

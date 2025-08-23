@@ -1,7 +1,8 @@
 import os
 import logging
 from typing import List, Tuple, Dict, Any
-from langchain_openai import ChatOpenAI
+# from langchain_openai import ChatOpenAI  # Commented out OpenAI import
+from langchain_google_genai import ChatGoogleGenerativeAI  # Added Gemini import
 from langchain.chains import ConversationChain, LLMChain
 from langchain.chains.question_answering import load_qa_chain
 from langchain.memory import ConversationBufferMemory
@@ -11,28 +12,22 @@ logger = logging.getLogger(__name__)
 
 class RAGChatbot:
     """
-    RAG (Retrieval-Augmented Generation) chatbot using LangChain and OpenAI
+    RAG (Retrieval-Augmented Generation) chatbot using LangChain and Google Gemini
     """
     
     def __init__(self, vector_store: VectorStore):
-        """
-        Initialize the RAG chatbot
-        
-        Args:
-            vector_store: The vector store for document retrieval
-        """
+       
         try:
             # Get API key from environment variable
-            api_key = os.environ.get("OPENAI_API_KEY")
+            api_key = os.environ.get("GOOGLE_API_KEY")  # Changed from OPENAI_API_KEY
             if not api_key:
-                logger.warning("OPENAI_API_KEY not set in environment variables")
+                logger.warning("GOOGLE_API_KEY not set in environment variables")
             
             # Initialize the language model
-            # the newest OpenAI model is "gpt-4o" which was released May 13, 2024.
-            # do not change this unless explicitly requested by the user
-            self.llm = ChatOpenAI(
-                openai_api_key=api_key,
-                model="ft:gpt-3.5-turbo-1106:personal::BTbZkhRd", 
+            # Using Google's Gemini Pro model
+            self.llm = ChatGoogleGenerativeAI(
+                google_api_key=api_key,  # Changed from openai_api_key
+                model="gemini-1.5-pro",  # Updated to correct model name
                 temperature=0.7,
             )           
             
@@ -64,12 +59,30 @@ class RAGChatbot:
                 return
                 
             # Check if there are documents in the vector store
-            if self.vector_store.vector_store.index_to_docstore_id is None or not self.vector_store.vector_store.index_to_docstore_id:
-                logger.warning("Vector store has no documents")
-                self.chain = None
-                return
-            
-            logger.debug(f"Initializing RAG chain with {len(self.vector_store.vector_store.index_to_docstore_id)} documents")
+            # For Pinecone, we need to check the index stats instead of index_to_docstore_id
+            try:
+                # Access the Pinecone index directly - try different access patterns
+                if hasattr(self.vector_store.vector_store, 'index'):
+                    index_stats = self.vector_store.vector_store.index.describe_index_stats()
+                elif hasattr(self.vector_store.vector_store, '_index'):
+                    index_stats = self.vector_store.vector_store._index.describe_index_stats()
+                else:
+                    # If we can't access the index directly, assume it exists and proceed
+                    logger.debug("Cannot access index stats directly, proceeding with initialization")
+                    index_stats = {"total_vector_count": 1}  # Assume documents exist
+                
+                total_vectors = index_stats.get("total_vector_count", 0)
+                
+                if total_vectors == 0:
+                    logger.warning("Vector store has no documents")
+                    self.chain = None
+                    return
+                
+                logger.debug(f"Initializing RAG chain with {total_vectors} documents")
+            except Exception as e:
+                logger.error(f"Error checking vector store stats: {e}")
+                # If stats check fails, assume documents exist and proceed
+                logger.debug("Stats check failed, proceeding with initialization")
             
             # Create a retriever
             self.retriever = self.vector_store.vector_store.as_retriever(
