@@ -61,6 +61,39 @@ A Retrieval-Augmented Generation (RAG) chatbot built with Python, Flask, and Lan
 - `templates/`: HTML templates
 - `static/`: CSS, JavaScript, and other static files
 
+## Deployment
+
+### Render Deployment
+
+1. **Fork/Clone** this repository to your GitHub account
+2. **Connect to Render**:
+   - Go to [render.com](https://render.com)
+   - Create a new **Web Service**
+   - Connect your GitHub repository
+3. **Configure Environment Variables**:
+   - `GOOGLE_API_KEY`: Your Google Gemini API key
+   - `PINECONE_API_KEY`: Your Pinecone API key
+4. **Build Settings** (Render will auto-detect):
+   - **Build Command**: `pip install -r requirements.txt`
+   - **Start Command**: `gunicorn app:app --bind 0.0.0.0:$PORT`
+5. **Deploy** and wait for build to complete
+
+### Alternative: Use render.yaml (Auto-deploy)
+
+If you have the `render.yaml` file in your repo, Render will automatically configure everything!
+
+### Local Development
+
+```bash
+# Using Poetry
+poetry install --no-root
+poetry run python app.py
+
+# Using pip
+pip install -r requirements.txt
+python app.py
+```
+
 ## License
 
 MIT
