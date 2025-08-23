@@ -43,7 +43,7 @@ class RAGChatbot:
             # Initialize the RAG chain
             self.initialize_rag_chain()
             
-            logger.debug("RAG chatbot initialized")
+
         except Exception as e:
             logger.error(f"Error initializing RAG chatbot: {str(e)}")
             raise
@@ -55,7 +55,7 @@ class RAGChatbot:
         try:
             if not self.vector_store.vector_store:
                 self.chain = None
-                logger.debug("RAG chain not initialized (no documents yet)")
+
                 return
                 
             # Check if there are documents in the vector store
@@ -68,7 +68,7 @@ class RAGChatbot:
                     index_stats = self.vector_store.vector_store._index.describe_index_stats()
                 else:
                     # If we can't access the index directly, assume it exists and proceed
-                    logger.debug("Cannot access index stats directly, proceeding with initialization")
+    
                     index_stats = {"total_vector_count": 1}  # Assume documents exist
                 
                 total_vectors = index_stats.get("total_vector_count", 0)
@@ -78,17 +78,17 @@ class RAGChatbot:
                     self.chain = None
                     return
                 
-                logger.debug(f"Initializing RAG chain with {total_vectors} documents")
+
             except Exception as e:
                 logger.error(f"Error checking vector store stats: {e}")
                 # If stats check fails, assume documents exist and proceed
-                logger.debug("Stats check failed, proceeding with initialization")
+
             
             # Create a retriever
             self.retriever = self.vector_store.vector_store.as_retriever(
                 search_kwargs={"k": 4}
             )
-            logger.debug("Retriever created successfully")
+
             
             # Create a QA chain
             try:
@@ -96,7 +96,7 @@ class RAGChatbot:
                     llm=self.llm,
                     chain_type="stuff" 
                 )
-                logger.debug("QA chain created successfully")
+
             except Exception as qa_error:
                 logger.error(f"Failed to create QA chain: {str(qa_error)}")
                 raise
@@ -108,7 +108,7 @@ class RAGChatbot:
                     memory=self.memory,
                     verbose=True
                 )
-                logger.debug("Conversation chain created successfully")
+
             except Exception as conv_error:
                 logger.error(f"Failed to create conversation chain: {str(conv_error)}")
                 raise
@@ -116,7 +116,7 @@ class RAGChatbot:
             # Create a simple wrapper function to maintain compatibility with the existing code
             self.chain = self._chain_wrapper
             
-            logger.debug("RAG chain components initialized with retriever")
+
         except Exception as e:
             logger.error(f"Error initializing RAG chain: {str(e)}")
             self.chain = None
@@ -133,23 +133,23 @@ class RAGChatbot:
         """
         try:
             query = inputs.get("question", "")
-            logger.debug(f"Processing query in chain wrapper: {query}")
+
             
             # Get relevant documents from the retriever
             docs = self.retriever.get_relevant_documents(query)
-            logger.debug(f"Retrieved {len(docs)} relevant documents")
+
             
             if not docs:
                 answer = "I couldn't find any relevant information in the documents you provided. Please try asking a different question or upload more documents."
             else:
                 # Run the question answering chain
                 answer = self.qa_chain.run(input_documents=docs, question=query)
-                logger.debug(f"Generated answer with QA chain")
+
             
             # Update conversation memory
             try:
                 self.conversation_chain.predict(input=query)
-                logger.debug("Updated conversation memory")
+
             except Exception as memory_error:
                 logger.warning(f"Error updating conversation memory: {str(memory_error)}")
             
@@ -175,7 +175,7 @@ class RAGChatbot:
             Tuple of (response, sources)
         """
         try:
-            logger.debug(f"Generating response for: {query}")
+
             
             # If no documents are loaded yet
             if self.vector_store.vector_store is None:
@@ -205,7 +205,7 @@ class RAGChatbot:
                 if source and source not in sources:
                     sources.append(source)
             
-            logger.debug(f"Generated response with {len(sources)} sources")
+
             
             return response, sources
         except Exception as e:

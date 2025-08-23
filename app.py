@@ -16,7 +16,7 @@ from utils.vector_store import VectorStore
 from utils.web_scraper import website_to_documents, get_website_text_content
 
 # Set up logging
-logging.basicConfig(level=logging.DEBUG)
+logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 # Initialize Flask app
@@ -24,27 +24,28 @@ app = Flask(__name__,
             static_folder="static",
             template_folder="templates")
 
-# Enable debug mode
-app.debug = True
-app.logger.setLevel(logging.DEBUG)
-logger.info("Flask app initialized in debug mode")
+logger.info("Flask app initialized")
 
-# Initialize vector store
-vector_store = VectorStore()
+# Initialize vector store with error handling
+try:
+    vector_store = VectorStore()
+    logger.info("✅ Successfully initialized VectorStore")
+except Exception as e:
+    logger.error(f"❌ Failed to initialize VectorStore: {str(e)}")
+    vector_store = None
 
-# Initialize RAG chatbot
-HARD_CODED_URL = "https://yashdd.github.io/Portfolio-Website/"
-documents = website_to_documents(HARD_CODED_URL, max_pages=5, max_depth=1)
-
-if documents:
-    vector_store.add_documents(documents)
-    logger.info(f"Loaded {len(documents)} documents from hardcoded website.")
-else:
-    logger.warning(f"Failed to load documents from {HARD_CODED_URL}")
-
-# Initialize RAG chatbot
-rag_chatbot = RAGChatbot(vector_store)
-rag_chatbot.initialize_rag_chain()
+# Initialize RAG chatbot with error handling
+try:
+    if vector_store:
+        rag_chatbot = RAGChatbot(vector_store)
+        rag_chatbot.initialize_rag_chain()
+        logger.info("✅ Successfully initialized RAGChatbot")
+    else:
+        rag_chatbot = None
+        logger.warning("⚠️ RAGChatbot not initialized due to VectorStore failure")
+except Exception as e:
+    logger.error(f"❌ Failed to initialize RAGChatbot: {str(e)}")
+    rag_chatbot = None
 # rag_chatbot = RAGChatbot(vector_store)
 
 @app.route("/")
@@ -59,13 +60,18 @@ def chat():
         data = request.json
         message = data.get("message")
         
-        logger.debug(f"Received chat message: {message}")
+
         
         if not message:
             return jsonify({"error": "Message is required"}), 400
         
+        if rag_chatbot is None:
+            return jsonify({
+                "response": "I'm having trouble accessing my knowledge base. Please check the logs for more information.",
+                "sources": []
+            }), 500
+        
         response, sources = rag_chatbot.generate_response(message)
-        logger.debug(f"Generated response: {response}")
         
         return jsonify({
             "response": response,
@@ -84,7 +90,6 @@ def upload_files():
             return jsonify({"error": "No files provided"}), 400
         
         files = request.files.getlist("files")
-        logger.debug(f"Received {len(files)} files for upload")
         
         if not files or all(file.filename == "" for file in files):
             logger.warning("Empty file list or all files have empty names")
@@ -98,7 +103,6 @@ def upload_files():
                 continue
                 
             filename = secure_filename(file.filename)
-            logger.debug(f"Processing file: {filename}")
             
             # Create a temporary file
             temp_file_path = None
@@ -108,19 +112,19 @@ def upload_files():
                     file.save(temp_file)
                     temp_file_path = temp_file.name
                 
-                logger.debug(f"Temporary file created at: {temp_file_path}")
+
                 
                 # Process the document
                 documents = process_documents(temp_file_path, filename)
-                logger.info(f"Document processing result: {len(documents)} chunks extracted from {filename}")
+
                 
                 # Check if we got valid documents
                 if documents and len(documents) > 0:
                     # Add documents to vector store
-                    logger.info(f"Adding {len(documents)} document chunks to vector store")
+
                     vector_store.add_documents(documents)
                     processed_files.append(filename)
-                    logger.info(f"Successfully processed file: {filename} ({len(documents)} chunks)")
+
                 else:
                     logger.warning(f"No document chunks extracted from: {filename}")
                     failed_files.append({"name": filename, "reason": "No text content extracted"})
@@ -226,8 +230,22 @@ def storage_status():
 @app.route("/health")
 def health_check():
     """Health check endpoint"""
-    logger.info("Health check endpoint called")
-    return jsonify({"status": "ok", "message": "RAG Chatbot is operational"})
+    try:
+        from datetime import datetime
+        logger.info("Health check endpoint called")
+        status = {
+            "status": "ok",
+            "message": "RAG Chatbot is operational",
+            "timestamp": datetime.now().isoformat(),
+            "environment": {
+                "google_api_key_set": bool(os.environ.get("GOOGLE_API_KEY")),
+                "pinecone_api_key_set": bool(os.environ.get("PINECONE_API_KEY"))
+            }
+        }
+        return jsonify(status)
+    except Exception as e:
+        logger.error(f"Health check error: {str(e)}")
+        return jsonify({"status": "error", "error": str(e)}), 500
 
 @app.route("/test")
 def test_page():
@@ -244,7 +262,7 @@ def process_website():
         max_pages = data.get("max_pages", 5)  # Default to 5 pages
         max_depth = data.get("max_depth", 1)  # Default to depth 1 (just the page)
         
-        logger.debug(f"Received website processing request for URL: {url}")
+
         
         if not url:
             return jsonify({"error": "URL is required"}), 400

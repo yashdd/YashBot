@@ -1,6 +1,4 @@
 import os
-print("DEBUG: API KEY from env:", os.getenv("GOOGLE_API_KEY"))  # Changed from OPENAI_API_KEY
-
 import logging
 from typing import List, Dict, Any, Optional
 from langchain_core.documents import Document
@@ -45,7 +43,7 @@ class VectorStore:
             self.vector_store = None
             self._initialize_pinecone()
             
-            logger.debug("Vector store initialized")
+
         except Exception as e:
             logger.error(f"Error initializing vector store: {str(e)}")
             raise
@@ -90,7 +88,7 @@ class VectorStore:
                 logger.warning("No documents to add")
                 return
             
-            logger.debug(f"Adding {len(documents)} documents to Pinecone")
+
             
             if self.vector_store is None:
                 # Create new Pinecone vector store
@@ -127,9 +125,9 @@ class VectorStore:
                 logger.warning("No documents in vector store")
                 return []
             
-            logger.debug(f"Searching for: {query}")
+
             similar_docs = self.vector_store.similarity_search(query, k=k)
-            logger.debug(f"Found {len(similar_docs)} similar documents")
+
             
             return similar_docs
         except Exception as e:
