@@ -3,7 +3,6 @@ import tempfile
 import logging
 import json
 import gc
-import psutil
 from typing import List, Dict, Any
 from flask import Flask, request, jsonify, render_template, send_from_directory
 from werkzeug.utils import secure_filename
@@ -32,14 +31,26 @@ app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024  # 16MB max file size
 def check_memory_usage():
     """Check current memory usage and log it"""
     try:
+        import psutil
         process = psutil.Process()
         memory_info = process.memory_info()
         memory_mb = memory_info.rss / 1024 / 1024
         logger.info(f"Current memory usage: {memory_mb:.2f} MB")
         return memory_mb
+    except ImportError:
+        logger.info("psutil not available, skipping memory check")
+        return 0
     except Exception as e:
         logger.warning(f"Could not check memory usage: {e}")
         return 0
+
+def force_garbage_collection():
+    """Force garbage collection to free memory"""
+    try:
+        gc.collect()
+        logger.info("Forced garbage collection completed")
+    except Exception as e:
+        logger.warning(f"Error during garbage collection: {e}")
 
 logger.info("Flask app initialized")
 
@@ -55,8 +66,9 @@ except Exception as e:
 try:
     if vector_store:
         rag_chatbot = RAGChatbot(vector_store)
-        rag_chatbot.initialize_rag_chain()
-        logger.info("✅ Successfully initialized RAGChatbot")
+        # Don't initialize RAG chain on startup to save memory
+        # rag_chatbot.initialize_rag_chain()
+        logger.info("✅ Successfully initialized RAGChatbot (RAG chain will initialize on first use)")
     else:
         rag_chatbot = None
         logger.warning("⚠️ RAGChatbot not initialized due to VectorStore failure")
@@ -94,7 +106,7 @@ def chat():
         response, sources = rag_chatbot.generate_response(message)
         
         # Clean up memory after processing
-        gc.collect()
+        force_garbage_collection()
         
         return jsonify({
             "response": response,
@@ -103,7 +115,7 @@ def chat():
     except Exception as e:
         logger.error(f"Error in chat endpoint: {str(e)}")
         # Clean up memory even on error
-        gc.collect()
+        force_garbage_collection()
         return jsonify({"error": f"Error processing chat: {str(e)}"}), 500
 
 @app.route("/upload", methods=["POST"])
@@ -182,7 +194,7 @@ def upload_files():
                 response["warning"] = f"{len(failed_files)} files could not be processed"
             
             # Clean up memory after successful upload
-            gc.collect()
+            force_garbage_collection()
             
             return jsonify(response)
         else:
@@ -195,7 +207,7 @@ def upload_files():
     except Exception as e:
         logger.error(f"Error in upload endpoint: {str(e)}")
         # Clean up memory even on error
-        gc.collect()
+        force_garbage_collection()
         return jsonify({"error": f"Error uploading documents: {str(e)}"}), 500
 
 @app.route("/test-pinecone")

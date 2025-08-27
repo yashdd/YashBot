@@ -40,8 +40,8 @@ class RAGChatbot:
             # Store the vector store
             self.vector_store = vector_store
             
-            # Initialize the RAG chain
-            self.initialize_rag_chain()
+            # Don't initialize RAG chain on startup to save memory
+            # self.initialize_rag_chain()
             
 
         except Exception as e:

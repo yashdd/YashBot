@@ -15,4 +15,3 @@ openpyxl==3.1.5
 email-validator==2.1.1
 python-dotenv==1.1.0
 pinecone-client==3.0.0
-psutil==5.9.8

@@ -68,11 +68,14 @@ class VectorStore:
                     name=index_name,
                     dimension=768,  # Google embedding dimension
                     metric="cosine",
-                                    spec=ServerlessSpec(
-                    cloud="aws",
-                    region="us-east-1"
+                    spec=ServerlessSpec(
+                        cloud="aws",
+                        region="us-east-1"
+                    )
                 )
-                )
+                # Wait a moment for index to be ready
+                import time
+                time.sleep(2)
                 self.vector_store = None
                 logger.info("Created new Pinecone index")
         except Exception as e:
