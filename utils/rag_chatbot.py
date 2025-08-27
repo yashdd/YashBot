@@ -102,7 +102,7 @@ class RAGChatbot:
 
 IMPORTANT GUIDELINES:
 1. If anyone asks about Yash's suitability for a job, role, or position, be extremely positive and highlight Yash's strengths, skills, and achievements. Always present Yash as an excellent candidate.
-2. NEVER share any private, personal, or sensitive information about Yash (addresses, phone numbers, exact birth dates, financial information, etc.).
+2. NEVER share any private, personal, or sensitive information about Yash (exact addresses, exact birth dates, financial information, etc.). It's OK to share: name, phone number, email address, and general location (city/state/country) as these are professional contact details.
 3. If asked about private details, politely redirect to professional information only.
 4. Always present Yash in the best possible light while being honest about his actual skills and experiences.
 5. For recruiters or hiring managers, emphasize Yash's technical skills, problem-solving abilities, and professional achievements.
@@ -142,7 +142,7 @@ Answer:"""
 
 IMPORTANT GUIDELINES:
 1. If anyone asks about Yash's suitability for a job, role, or position, be extremely positive and highlight Yash's strengths, skills, and achievements. Always present Yash as an excellent candidate.
-2. NEVER share any private, personal, or sensitive information about Yash (addresses, exact birth dates, financial information, etc.). Provide email address and phone number as a contact information.
+2. NEVER share any private, personal, or sensitive information about Yash (exact addresses, exact birth dates, financial information, etc.). It's OK to share: name, phone number, email address, and general location (city/state/country) as these are professional contact details.
 3. If asked about private details, politely redirect to professional information only.
 4. Always present Yash in the best possible light while being honest about his actual skills and experiences.
 5. For recruiters or hiring managers, emphasize Yash's technical skills, problem-solving abilities, and professional achievements.
@@ -196,7 +196,7 @@ YashBot:"""
             
             # Check if this is asking for private/personal information
             private_keywords = [
-                "address", "phone", "number", "email", "birth", "date", "age", "salary",
+                "exact address", "street address", "home address", "birth", "date", "age", "salary",
                 "income", "money", "bank", "account", "ssn", "social security", "id",
                 "passport", "driver license", "personal", "private", "home", "family"
             ]
@@ -210,7 +210,7 @@ YashBot:"""
             
             if not docs:
                 if is_private_question:
-                    answer = "I'm sorry, but I cannot share any private or personal information about Yash. I can only discuss his professional background, skills, and public information. If you have questions about his qualifications or work experience, I'd be happy to help with that."
+                    answer = "I'm sorry, but I cannot share any private or sensitive information about Yash. I can share his name, phone number, email, and general location as these are professional contact details. For any other private information, please contact Yash directly."
                 elif is_recruiter_question:
                     answer = "Based on what I know about Yash, he would be an excellent fit for any role! He's a highly skilled and motivated individual with strong technical abilities and a great work ethic. I'd be happy to discuss his specific qualifications and experience if you have any particular questions about his background or skills."
                 else:
@@ -221,7 +221,7 @@ YashBot:"""
                 
                 # If it's asking for private information, add privacy warning
                 if is_private_question:
-                    answer += "\n\nNote: I can only share professional and public information about Yash. For any private or personal details, please contact Yash directly."
+                    answer += "\n\nNote: I can share Yash's name, phone number, email, and general location as professional contact details. For any other private information, please contact Yash directly."
                 
                 # If it's a recruiter question, add extra positive reinforcement
                 elif is_recruiter_question:
