@@ -2,6 +2,7 @@ import os
 import tempfile
 import logging
 import json
+import gc
 from typing import List, Dict, Any
 from flask import Flask, request, jsonify, render_template, send_from_directory
 from werkzeug.utils import secure_filename
@@ -23,6 +24,9 @@ logger = logging.getLogger(__name__)
 app = Flask(__name__, 
             static_folder="static",
             template_folder="templates")
+
+# Optimize for memory usage
+app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024  # 16MB max file size
 
 logger.info("Flask app initialized")
 
@@ -73,12 +77,17 @@ def chat():
         
         response, sources = rag_chatbot.generate_response(message)
         
+        # Clean up memory after processing
+        gc.collect()
+        
         return jsonify({
             "response": response,
             "sources": sources
         })
     except Exception as e:
         logger.error(f"Error in chat endpoint: {str(e)}")
+        # Clean up memory even on error
+        gc.collect()
         return jsonify({"error": f"Error processing chat: {str(e)}"}), 500
 
 @app.route("/upload", methods=["POST"])
@@ -156,6 +165,9 @@ def upload_files():
                 response["failed_files"] = failed_files
                 response["warning"] = f"{len(failed_files)} files could not be processed"
             
+            # Clean up memory after successful upload
+            gc.collect()
+            
             return jsonify(response)
         else:
             # If all files failed, return an error
@@ -166,6 +178,8 @@ def upload_files():
             }), 500
     except Exception as e:
         logger.error(f"Error in upload endpoint: {str(e)}")
+        # Clean up memory even on error
+        gc.collect()
         return jsonify({"error": f"Error uploading documents: {str(e)}"}), 500
 
 @app.route("/test-pinecone")

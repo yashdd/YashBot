@@ -17,12 +17,14 @@
             <div class="container-fluid d-flex justify-content-between align-items-center">
                 <h1 class="h4 mb-0"><i class="fas fa-robot me-2"></i>YashBot</h1>
                 <div>
-                   <button class="btn btn-outline-secondary me-2" type="button" data-bs-toggle="offcanvas" data-bs-target="#websitePanel">
+                   <!-- Add Website Button - DISABLED FOR USERS -->
+                   <!-- <button class="btn btn-outline-secondary me-2" type="button" data-bs-toggle="offcanvas" data-bs-target="#websitePanel">
                         <i class="fas fa-globe me-2"></i>Add Website
-                    </button> 
-                    <button class="btn btn-outline-secondary" type="button" data-bs-toggle="offcanvas" data-bs-target="#uploadPanel">
+                    </button>  -->
+                    <!-- Upload Documents Button - DISABLED FOR USERS -->
+                    <!-- <button class="btn btn-outline-secondary" type="button" data-bs-toggle="offcanvas" data-bs-target="#uploadPanel">
                         <i class="fas fa-file-upload me-2"></i>Upload Documents
-                    </button>
+                    </button> -->
                 </div>
             </div>
         </header>
@@ -36,7 +38,7 @@
                     <div id="chat-messages" class="card-body overflow-auto p-3">
                         <div class="message system-message">
                             <div class="message-content">
-                                <p>Welcome to YashBot! I'm trained on content about Yash. Ask me anything you'd like to know!</p>
+                                <p>Welcome to YashBot! I'm trained on content about Yash. Ask me anything you'd like to know! I have access to pre-loaded documents and websites about Yash.</p>
 
                             </div>
                         </div>
@@ -53,8 +55,8 @@
             </div>
         </main>
 
-        <!-- Upload Documents Panel -->
-        <div class="offcanvas offcanvas-end" tabindex="-1" id="uploadPanel" aria-labelledby="uploadPanelLabel">
+        <!-- Upload Documents Panel - DISABLED FOR USERS -->
+        <!-- <div class="offcanvas offcanvas-end" tabindex="-1" id="uploadPanel" aria-labelledby="uploadPanelLabel">
             <div class="offcanvas-header">
                 <h5 class="offcanvas-title" id="uploadPanelLabel">Upload Documents</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="offcanvas" aria-label="Close"></button>
@@ -90,10 +92,10 @@
                     </ul>
                 </div>
             </div>
-        </div>
+        </div> -->
     
-        <!-- Website Processing Panel -->
-        <div class="offcanvas offcanvas-end" tabindex="-1" id="websitePanel" aria-labelledby="websitePanelLabel">
+        <!-- Website Processing Panel - DISABLED FOR USERS -->
+        <!-- <div class="offcanvas offcanvas-end" tabindex="-1" id="websitePanel" aria-labelledby="websitePanelLabel">
             <div class="offcanvas-header">
                 <h5 class="offcanvas-title" id="websitePanelLabel">Add Website Content</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="offcanvas" aria-label="Close"></button>
@@ -115,7 +117,7 @@
                             <input type="number" class="form-control" id="max-pages" min="1" max="20" value="5">
                             <div class="form-text">Maximum number of pages to process</div>
                         </div>
-                        <div class="col-md-6">
+                        <div class="col-6">
                             <label for="max-depth" class="form-label">Max Depth</label>
                             <input type="number" class="form-control" id="max-depth" min="0" max="3" value="1">
                             <div class="form-text">How many links deep to crawl</div>
@@ -134,7 +136,7 @@
                     </ul>
                 </div>
             </div>
-        </div>
+        </div> -->
     </div>
 
     <!-- Bootstrap JS Bundle with Popper -->

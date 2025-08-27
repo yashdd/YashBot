@@ -136,7 +136,7 @@ class RAGChatbot:
 
             
             # Get relevant documents from the retriever
-            docs = self.retriever.get_relevant_documents(query)
+            docs = self.retriever.invoke(query)
 
             
             if not docs:

@@ -86,3 +86,4 @@ This document outlines the changes made to migrate the RAG chatbot from OpenAI A
 2. **Integration**: Better integration with Google's ecosystem
 3. **Performance**: Comparable performance to OpenAI models
 4. **Features**: Access to Google's latest AI capabilities
+
