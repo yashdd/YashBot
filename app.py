@@ -69,6 +69,13 @@ try:
         # Don't initialize RAG chain on startup to save memory
         # rag_chatbot.initialize_rag_chain()
         logger.info("✅ Successfully initialized RAGChatbot (RAG chain will initialize on first use)")
+        
+        # Test that the chain attribute exists
+        if hasattr(rag_chatbot, 'chain'):
+            logger.info("✅ RAGChatbot chain attribute properly initialized")
+        else:
+            logger.error("❌ RAGChatbot missing chain attribute")
+            rag_chatbot = None
     else:
         rag_chatbot = None
         logger.warning("⚠️ RAGChatbot not initialized due to VectorStore failure")

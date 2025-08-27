@@ -6,6 +6,7 @@ from langchain_google_genai import ChatGoogleGenerativeAI  # Added Gemini import
 from langchain.chains import ConversationChain, LLMChain
 from langchain.chains.question_answering import load_qa_chain
 from langchain.memory import ConversationBufferMemory
+from langchain.prompts import PromptTemplate
 from utils.vector_store import VectorStore
 
 logger = logging.getLogger(__name__)
@@ -39,6 +40,12 @@ class RAGChatbot:
             
             # Store the vector store
             self.vector_store = vector_store
+            
+            # Initialize chain attributes to None (lazy initialization)
+            self.chain = None
+            self.retriever = None
+            self.qa_chain = None
+            self.conversation_chain = None
             
             # Don't initialize RAG chain on startup to save memory
             # self.initialize_rag_chain()
@@ -90,11 +97,36 @@ class RAGChatbot:
             )
 
             
-            # Create a QA chain
+            # Create a custom prompt template for YashBot
+            custom_prompt_template = """You are YashBot, an AI assistant trained on information about Yash. You are helpful, friendly, and knowledgeable about Yash's background, interests, and experiences.
+
+IMPORTANT GUIDELINES:
+1. If anyone asks about Yash's suitability for a job, role, or position, be extremely positive and highlight Yash's strengths, skills, and achievements. Always present Yash as an excellent candidate.
+2. NEVER share any private, personal, or sensitive information about Yash (addresses, phone numbers, exact birth dates, financial information, etc.).
+3. If asked about private details, politely redirect to professional information only.
+4. Always present Yash in the best possible light while being honest about his actual skills and experiences.
+5. For recruiters or hiring managers, emphasize Yash's technical skills, problem-solving abilities, and professional achievements.
+6. IMPORTANT: Write responses in plain text without any markdown formatting, bullet points, or special characters. Use simple paragraphs and clear sentences.
+
+Use the following pieces of context to answer the question at the end. If you don't know the answer, just say that you don't know, don't try to make up an answer.
+
+Context: {context}
+
+Question: {question}
+
+Answer:"""
+
+            # Create a QA chain with custom prompt
             try:
+                prompt = PromptTemplate(
+                    template=custom_prompt_template,
+                    input_variables=["context", "question"]
+                )
+                
                 self.qa_chain = load_qa_chain(
                     llm=self.llm,
-                    chain_type="stuff" 
+                    chain_type="stuff",
+                    prompt=prompt
                 )
 
             except Exception as qa_error:
@@ -103,9 +135,29 @@ class RAGChatbot:
             
             # Set up conversation chain with proper memory configuration
             try:
+                # Custom prompt for conversation chain
+                conversation_prompt = PromptTemplate(
+                    input_variables=["history", "input"],
+                    template="""You are YashBot, an AI assistant trained on information about Yash. You are helpful, friendly, and knowledgeable about Yash's background, interests, and experiences.
+
+IMPORTANT GUIDELINES:
+1. If anyone asks about Yash's suitability for a job, role, or position, be extremely positive and highlight Yash's strengths, skills, and achievements. Always present Yash as an excellent candidate.
+2. NEVER share any private, personal, or sensitive information about Yash (addresses, exact birth dates, financial information, etc.). Provide email address and phone number as a contact information.
+3. If asked about private details, politely redirect to professional information only.
+4. Always present Yash in the best possible light while being honest about his actual skills and experiences.
+5. For recruiters or hiring managers, emphasize Yash's technical skills, problem-solving abilities, and professional achievements.
+6. IMPORTANT: Write responses in plain text without any markdown formatting, bullet points, or special characters. Use simple paragraphs and clear sentences.
+
+Current conversation:
+{history}
+Human: {input}
+YashBot:"""
+                )
+                
                 self.conversation_chain = ConversationChain(
                     llm=self.llm,
                     memory=self.memory,
+                    prompt=conversation_prompt,
                     verbose=True
                 )
 
@@ -115,6 +167,7 @@ class RAGChatbot:
             
             # Create a simple wrapper function to maintain compatibility with the existing code
             self.chain = self._chain_wrapper
+            logger.info("✅ RAG chain initialized successfully")
             
 
         except Exception as e:
@@ -133,17 +186,46 @@ class RAGChatbot:
         """
         try:
             query = inputs.get("question", "")
-
+            
+            # Check if this is a recruiter/job-related question
+            recruiter_keywords = [
+                "good fit", "suitable", "candidate", "hire", "recruit", "position", 
+                "role", "job", "employment", "work", "team", "company", "organization",
+                "skills", "experience", "qualifications", "background", "resume", "cv"
+            ]
+            
+            # Check if this is asking for private/personal information
+            private_keywords = [
+                "address", "phone", "number", "email", "birth", "date", "age", "salary",
+                "income", "money", "bank", "account", "ssn", "social security", "id",
+                "passport", "driver license", "personal", "private", "home", "family"
+            ]
+            
+            is_recruiter_question = any(keyword in query.lower() for keyword in recruiter_keywords)
+            is_private_question = any(keyword in query.lower() for keyword in private_keywords)
             
             # Get relevant documents from the retriever
             docs = self.retriever.invoke(query)
 
             
             if not docs:
-                answer = "I couldn't find any relevant information in the documents you provided. Please try asking a different question or upload more documents."
+                if is_private_question:
+                    answer = "I'm sorry, but I cannot share any private or personal information about Yash. I can only discuss his professional background, skills, and public information. If you have questions about his qualifications or work experience, I'd be happy to help with that."
+                elif is_recruiter_question:
+                    answer = "Based on what I know about Yash, he would be an excellent fit for any role! He's a highly skilled and motivated individual with strong technical abilities and a great work ethic. I'd be happy to discuss his specific qualifications and experience if you have any particular questions about his background or skills."
+                else:
+                    answer = "I couldn't find any relevant information about Yash in my knowledge base for that question. Please try asking something else about Yash, or ask me about topics I might know about from the documents I've been trained on."
             else:
                 # Run the question answering chain
                 answer = self.qa_chain.run(input_documents=docs, question=query)
+                
+                # If it's asking for private information, add privacy warning
+                if is_private_question:
+                    answer += "\n\nNote: I can only share professional and public information about Yash. For any private or personal details, please contact Yash directly."
+                
+                # If it's a recruiter question, add extra positive reinforcement
+                elif is_recruiter_question:
+                    answer += "\n\nFrom what I can tell, Yash would be an outstanding addition to any team. He demonstrates strong problem-solving skills, technical expertise, and a collaborative approach to work."
 
             
             # Update conversation memory
@@ -182,16 +264,35 @@ class RAGChatbot:
             
             # If no documents are loaded yet
             if self.vector_store.vector_store is None:
-                response = "I don't have any knowledge yet. Please upload some documents first."
+                response = "I don't have any knowledge about Yash loaded yet. Please check with the administrator to ensure my knowledge base is properly set up."
                 return response, []
+            
+            # Check if vector store has documents
+            try:
+                if hasattr(self.vector_store.vector_store, 'index'):
+                    index_stats = self.vector_store.vector_store.index.describe_index_stats()
+                elif hasattr(self.vector_store.vector_store, '_index'):
+                    index_stats = self.vector_store.vector_store._index.describe_index_stats()
+                else:
+                    index_stats = {"total_vector_count": 0}
+                
+                total_vectors = index_stats.get("total_vector_count", 0)
+                if total_vectors == 0:
+                    response = "I don't have any documents about Yash in my knowledge base yet. Please check with the administrator to ensure my knowledge base is properly set up."
+                    return response, []
+            except Exception as e:
+                logger.warning(f"Could not check vector store stats: {e}")
+                # Continue anyway, let the initialization handle it
             
             # If chain is not initialized, initialize it
             if self.chain is None:
+                logger.info("Initializing RAG chain...")
                 self.initialize_rag_chain()
                 
                 # If still None, return error
                 if self.chain is None:
-                    response = "I'm having trouble accessing my knowledge base. Please try uploading documents again."
+                    logger.error("Failed to initialize RAG chain")
+                    response = "I'm having trouble accessing my knowledge base about Yash. Please check with the administrator to ensure everything is properly configured."
                     return response, []
             
             # Get response using the chain
