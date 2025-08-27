@@ -175,7 +175,10 @@ class RAGChatbot:
             Tuple of (response, sources)
         """
         try:
-
+            # Limit query length to prevent memory issues
+            if len(query) > 1000:
+                query = query[:1000]
+                logger.warning("Query truncated to prevent memory issues")
             
             # If no documents are loaded yet
             if self.vector_store.vector_store is None:
@@ -205,7 +208,9 @@ class RAGChatbot:
                 if source and source not in sources:
                     sources.append(source)
             
-
+            # Force garbage collection after RAG operations
+            import gc
+            gc.collect()
             
             return response, sources
         except Exception as e:

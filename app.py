@@ -3,6 +3,7 @@ import tempfile
 import logging
 import json
 import gc
+import psutil
 from typing import List, Dict, Any
 from flask import Flask, request, jsonify, render_template, send_from_directory
 from werkzeug.utils import secure_filename
@@ -27,6 +28,18 @@ app = Flask(__name__,
 
 # Optimize for memory usage
 app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024  # 16MB max file size
+
+def check_memory_usage():
+    """Check current memory usage and log it"""
+    try:
+        process = psutil.Process()
+        memory_info = process.memory_info()
+        memory_mb = memory_info.rss / 1024 / 1024
+        logger.info(f"Current memory usage: {memory_mb:.2f} MB")
+        return memory_mb
+    except Exception as e:
+        logger.warning(f"Could not check memory usage: {e}")
+        return 0
 
 logger.info("Flask app initialized")
 
@@ -61,6 +74,9 @@ def index():
 def chat():
     """Process a chat message and return a response"""
     try:
+        # Check memory before processing
+        check_memory_usage()
+        
         data = request.json
         message = data.get("message")
         
