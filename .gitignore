@@ -60,9 +60,12 @@ logs/
 *.temp
 temp/
 
-# Poetry (removed)
-# poetry.lock
-# pyproject.toml
+# Poetry (completely disabled)
+poetry.lock
+pyproject.toml
+.venv/
+poetry.toml
+.poetry/
 
 # Jupyter Notebook
 .ipynb_checkpoints
