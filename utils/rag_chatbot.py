@@ -2,7 +2,7 @@ import os
 import logging
 from typing import List, Tuple, Dict, Any
 from langchain_google_genai import ChatGoogleGenerativeAI
-from langchain.memory import ConversationBufferMemory
+# Removed deprecated ConversationBufferMemory
 from langchain.prompts import PromptTemplate
 from langchain_core.output_parsers import StrOutputParser
 from utils.vector_store import VectorStore
@@ -29,15 +29,9 @@ class RAGChatbot:
                 temperature=0.7,
             )
             
-            # Initialize conversation memory
-            try:
-                self.memory = ConversationBufferMemory(
-                    memory_key="history", 
-                    return_messages=False
-                )
-            except Exception as memory_error:
-                logger.warning(f"Error initializing memory: {memory_error}")
-                self.memory = None
+            # Initialize simple conversation memory (replace deprecated ConversationBufferMemory)
+            self.conversation_history = []
+            self.max_history = 10  # Keep last 10 exchanges
             
             # Store the vector store
             self.vector_store = vector_store
@@ -228,19 +222,27 @@ YashBot:"""
             
             # Update conversation memory
             try:
-                if self.memory:
-                    # Get conversation history
-                    history = self.memory.load_memory_variables({}).get("history", "")
-                    
-                    # Run conversation chain
-                    result = self.conversation_chain.invoke({
-                        "history": history,
+                # Format conversation history for prompt
+                history_text = ""
+                for exchange in self.conversation_history[-5:]:  # Last 5 exchanges
+                    history_text += f"Human: {exchange['input']}\nYashBot: {exchange['output']}\n"
+                
+                # Run conversation chain to get enhanced response
+                if self.conversation_chain:
+                    enhanced_result = self.conversation_chain.invoke({
+                        "history": history_text,
                         "input": query
                     })
                     
-                    # Update memory (result is now a string directly)
-                    self.memory.save_context({"input": query}, {"output": result})
-
+                    # Update conversation history
+                    self.conversation_history.append({
+                        "input": query,
+                        "output": answer
+                    })
+                    
+                    # Keep only recent history
+                    if len(self.conversation_history) > self.max_history:
+                        self.conversation_history = self.conversation_history[-self.max_history:]
 
             except Exception as memory_error:
                 logger.warning(f"Error updating conversation memory: {str(memory_error)}")

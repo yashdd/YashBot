@@ -3,7 +3,7 @@ services:
     name: rag-chatbot
     env: python
     buildCommand: pip install -r requirements.txt
-    startCommand: gunicorn app:app --bind 0.0.0.0:$PORT --timeout 30 --workers 1 --max-requests 50 --max-requests-jitter 5 --preload --worker-class sync
+    startCommand: gunicorn app:app --bind 0.0.0.0:$PORT --timeout 60 --workers 1
     envVars:
       - key: GOOGLE_API_KEY
         sync: false
