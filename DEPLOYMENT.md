@@ -1,26 +1,29 @@
 # Deployment Guide
 
-## Quick Deploy to Render
+## 🐋 **NUCLEAR OPTION: Docker Deploy**
+
+**FUCK POETRY - We're going Docker to completely bypass their detection!**
 
 1. **Push to GitHub**
    ```bash
    git add .
-   git commit -m "Switch to pip - remove Poetry"
+   git commit -m "FUCK POETRY - Switch to Docker deployment"
    git push
    ```
 
 2. **Deploy on Render**
    - Go to [render.com](https://render.com)
    - Connect your GitHub repo
-   - Render will auto-detect Python and use `render.yaml`
+   - Render will detect `Dockerfile` and use Docker (NO POETRY!)
 
 3. **Set Environment Variables** (in Render dashboard):
    - `GOOGLE_API_KEY`: Your Google Gemini API key
    - `PINECONE_API_KEY`: Your Pinecone API key
 
-4. **Deploy** - Render will automatically:
-   - Run `pip install -r requirements.txt`
-   - Start with `gunicorn app:app --bind 0.0.0.0:$PORT --timeout 60 --workers 1`
+4. **Deploy** - Render will:
+   - ✅ Build Docker image with pure pip
+   - ✅ NO Poetry detection possible
+   - ✅ Start with gunicorn inside container
 
 ## Local Development
 
