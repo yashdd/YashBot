@@ -38,7 +38,6 @@ def check_memory_usage():
         logger.info(f"Current memory usage: {memory_mb:.2f} MB")
         return memory_mb
     except ImportError:
-        logger.info("psutil not available, skipping memory check")
         return 0
     except Exception as e:
         logger.warning(f"Could not check memory usage: {e}")
@@ -48,7 +47,6 @@ def force_garbage_collection():
     """Force garbage collection to free memory"""
     try:
         gc.collect()
-        logger.info("Forced garbage collection completed")
     except Exception as e:
         logger.warning(f"Error during garbage collection: {e}")
 
@@ -57,32 +55,23 @@ logger.info("Flask app initialized")
 # Initialize vector store with error handling
 try:
     vector_store = VectorStore()
-    logger.info("✅ Successfully initialized VectorStore")
+    logger.info("Successfully initialized VectorStore")
 except Exception as e:
-    logger.error(f"❌ Failed to initialize VectorStore: {str(e)}")
+    logger.error(f"Failed to initialize VectorStore: {str(e)}")
     vector_store = None
 
 # Initialize RAG chatbot with error handling
 try:
     if vector_store:
         rag_chatbot = RAGChatbot(vector_store)
-        # Don't initialize RAG chain on startup to save memory
-        # rag_chatbot.initialize_rag_chain()
-        logger.info("✅ Successfully initialized RAGChatbot (RAG chain will initialize on first use)")
-        
-        # Test that the chain attribute exists
-        if hasattr(rag_chatbot, 'chain'):
-            logger.info("✅ RAGChatbot chain attribute properly initialized")
-        else:
-            logger.error("❌ RAGChatbot missing chain attribute")
-            rag_chatbot = None
+        logger.info("Successfully initialized RAGChatbot")
     else:
         rag_chatbot = None
-        logger.warning("⚠️ RAGChatbot not initialized due to VectorStore failure")
+        logger.warning("RAGChatbot not initialized due to VectorStore failure")
 except Exception as e:
-    logger.error(f"❌ Failed to initialize RAGChatbot: {str(e)}")
+    logger.error(f"Failed to initialize RAGChatbot: {str(e)}")
     rag_chatbot = None
-# rag_chatbot = RAGChatbot(vector_store)
+
 
 @app.route("/")
 def index():
@@ -93,13 +82,8 @@ def index():
 def chat():
     """Process a chat message and return a response"""
     try:
-        # Check memory before processing
-        check_memory_usage()
-        
         data = request.json
         message = data.get("message")
-        
-
         
         if not message:
             return jsonify({"error": "Message is required"}), 400
@@ -188,7 +172,6 @@ def upload_files():
         # Check if any files were processed successfully
         if processed_files:
             # Re-initialize the RAG chain now that we have documents
-            logger.info("Re-initializing RAG chain with new documents")
             rag_chatbot.initialize_rag_chain()
             
             response = {
@@ -258,7 +241,6 @@ def test_pinecone():
         except Exception as e:
             result["error"] = f"Pinecone error: {str(e)}"
             
-        logger.info(f"Pinecone test result: {result}")
         return jsonify(result)
         
     except Exception as e:
@@ -270,7 +252,6 @@ def storage_status():
     """Check the current storage status"""
     try:
         storage_info = vector_store.get_storage_info()
-        logger.info(f"Storage status: {storage_info}")
         return jsonify(storage_info)
     except Exception as e:
         logger.error(f"Error getting storage status: {str(e)}")
@@ -281,7 +262,6 @@ def health_check():
     """Health check endpoint"""
     try:
         from datetime import datetime
-        logger.info("Health check endpoint called")
         status = {
             "status": "ok",
             "message": "RAG Chatbot is operational",
@@ -299,7 +279,6 @@ def health_check():
 @app.route("/test")
 def test_page():
     """Test endpoint to verify the server is working"""
-    logger.info("Test endpoint called")
     return "RAG Chatbot test page - Server is running!"
 
 @app.route("/process-website", methods=["POST"])
@@ -310,8 +289,6 @@ def process_website():
         url = data.get("url")
         max_pages = data.get("max_pages", 5)  # Default to 5 pages
         max_depth = data.get("max_depth", 1)  # Default to depth 1 (just the page)
-        
-
         
         if not url:
             return jsonify({"error": "URL is required"}), 400
@@ -334,8 +311,6 @@ def process_website():
         
         page_urls = [doc.metadata.get("source") for doc in documents]
         unique_urls = list(set(page_urls))
-        
-        logger.info(f"Successfully processed website {url} with {len(documents)} document chunks from {len(unique_urls)} pages")
         
         return jsonify({
             "message": f"Successfully processed website content", 

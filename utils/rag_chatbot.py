@@ -1,12 +1,10 @@
 import os
 import logging
 from typing import List, Tuple, Dict, Any
-# from langchain_openai import ChatOpenAI  # Commented out OpenAI import
-from langchain_google_genai import ChatGoogleGenerativeAI  # Added Gemini import
-from langchain.chains import ConversationChain, LLMChain
-from langchain.chains.question_answering import load_qa_chain
+from langchain_google_genai import ChatGoogleGenerativeAI
 from langchain.memory import ConversationBufferMemory
 from langchain.prompts import PromptTemplate
+from langchain_core.output_parsers import StrOutputParser
 from utils.vector_store import VectorStore
 
 logger = logging.getLogger(__name__)
@@ -20,23 +18,26 @@ class RAGChatbot:
        
         try:
             # Get API key from environment variable
-            api_key = os.environ.get("GOOGLE_API_KEY")  # Changed from OPENAI_API_KEY
+            api_key = os.environ.get("GOOGLE_API_KEY")
             if not api_key:
                 logger.warning("GOOGLE_API_KEY not set in environment variables")
             
             # Initialize the language model
-            # Using Google's Gemini Pro model
             self.llm = ChatGoogleGenerativeAI(
-                google_api_key=api_key,  # Changed from openai_api_key
-                model="gemini-1.5-pro",  # Updated to correct model name
+                google_api_key=api_key,
+                model="gemini-1.5-pro",
                 temperature=0.7,
-            )           
+            )
             
             # Initialize conversation memory
-            self.memory = ConversationBufferMemory(
-                memory_key="history", 
-                return_messages=False
-            )
+            try:
+                self.memory = ConversationBufferMemory(
+                    memory_key="history", 
+                    return_messages=False
+                )
+            except Exception as memory_error:
+                logger.warning(f"Error initializing memory: {memory_error}")
+                self.memory = None
             
             # Store the vector store
             self.vector_store = vector_store
@@ -47,8 +48,7 @@ class RAGChatbot:
             self.qa_chain = None
             self.conversation_chain = None
             
-            # Don't initialize RAG chain on startup to save memory
-            # self.initialize_rag_chain()
+
             
 
         except Exception as e:
@@ -75,7 +75,6 @@ class RAGChatbot:
                     index_stats = self.vector_store.vector_store._index.describe_index_stats()
                 else:
                     # If we can't access the index directly, assume it exists and proceed
-    
                     index_stats = {"total_vector_count": 1}  # Assume documents exist
                 
                 total_vectors = index_stats.get("total_vector_count", 0)
@@ -89,7 +88,6 @@ class RAGChatbot:
             except Exception as e:
                 logger.error(f"Error checking vector store stats: {e}")
                 # If stats check fails, assume documents exist and proceed
-
             
             # Create a retriever
             self.retriever = self.vector_store.vector_store.as_retriever(
@@ -123,11 +121,8 @@ Answer:"""
                     input_variables=["context", "question"]
                 )
                 
-                self.qa_chain = load_qa_chain(
-                    llm=self.llm,
-                    chain_type="stuff",
-                    prompt=prompt
-                )
+                # Create a modern QA chain
+                self.qa_chain = prompt | self.llm | StrOutputParser()
 
             except Exception as qa_error:
                 logger.error(f"Failed to create QA chain: {str(qa_error)}")
@@ -154,12 +149,8 @@ Human: {input}
 YashBot:"""
                 )
                 
-                self.conversation_chain = ConversationChain(
-                    llm=self.llm,
-                    memory=self.memory,
-                    prompt=conversation_prompt,
-                    verbose=True
-                )
+                # Create a conversation chain
+                self.conversation_chain = conversation_prompt | self.llm | StrOutputParser()
 
             except Exception as conv_error:
                 logger.error(f"Failed to create conversation chain: {str(conv_error)}")
@@ -167,8 +158,6 @@ YashBot:"""
             
             # Create a simple wrapper function to maintain compatibility with the existing code
             self.chain = self._chain_wrapper
-            logger.info("✅ RAG chain initialized successfully")
-            
 
         except Exception as e:
             logger.error(f"Error initializing RAG chain: {str(e)}")
@@ -206,7 +195,6 @@ YashBot:"""
             
             # Get relevant documents from the retriever
             docs = self.retriever.invoke(query)
-
             
             if not docs:
                 if is_private_question:
@@ -216,8 +204,18 @@ YashBot:"""
                 else:
                     answer = "I couldn't find any relevant information about Yash in my knowledge base for that question. Please try asking something else about Yash, or ask me about topics I might know about from the documents I've been trained on."
             else:
-                # Run the question answering chain
-                answer = self.qa_chain.run(input_documents=docs, question=query)
+                # Run the question answering chain with new API
+                try:
+                    # Prepare context from documents
+                    context = "\n\n".join([doc.page_content for doc in docs])
+                    answer = self.qa_chain.invoke({
+                        "context": context,
+                        "question": query
+                    })
+
+                except Exception as qa_error:
+                    logger.error(f"Error running QA chain: {qa_error}")
+                    answer = "I encountered an error while processing your question. Please try asking again."
                 
                 # If it's asking for private information, add privacy warning
                 if is_private_question:
@@ -230,7 +228,19 @@ YashBot:"""
             
             # Update conversation memory
             try:
-                self.conversation_chain.predict(input=query)
+                if self.memory:
+                    # Get conversation history
+                    history = self.memory.load_memory_variables({}).get("history", "")
+                    
+                    # Run conversation chain
+                    result = self.conversation_chain.invoke({
+                        "history": history,
+                        "input": query
+                    })
+                    
+                    # Update memory (result is now a string directly)
+                    self.memory.save_context({"input": query}, {"output": result})
+
 
             except Exception as memory_error:
                 logger.warning(f"Error updating conversation memory: {str(memory_error)}")
@@ -286,7 +296,6 @@ YashBot:"""
             
             # If chain is not initialized, initialize it
             if self.chain is None:
-                logger.info("Initializing RAG chain...")
                 self.initialize_rag_chain()
                 
                 # If still None, return error

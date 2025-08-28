@@ -2,8 +2,7 @@ import os
 import logging
 from typing import List, Dict, Any, Optional
 from langchain_core.documents import Document
-# from langchain_openai import OpenAIEmbeddings  # Commented out OpenAI embeddings
-from langchain_google_genai import GoogleGenerativeAIEmbeddings  # Added Gemini embeddings
+from langchain_google_genai import GoogleGenerativeAIEmbeddings
 from langchain_community.vectorstores import Pinecone
 from pinecone import Pinecone as PineconeClient
 
@@ -91,23 +90,19 @@ class VectorStore:
                 logger.warning("No documents to add")
                 return
             
-
-            
             if self.vector_store is None:
                 # Create new Pinecone vector store
                 index_name = "rag-chatbot-index"
-                logger.info(f"Creating new Pinecone vector store with index: {index_name}")
                 self.vector_store = Pinecone.from_documents(
                     documents, 
                     self.embeddings,
                     index_name=index_name
                 )
-                logger.info(f"✅ Successfully created Pinecone vector store with {len(documents)} documents")
+                logger.info(f"Created Pinecone vector store with {len(documents)} documents")
             else:
                 # Add to existing Pinecone vector store
-                logger.info(f"Adding {len(documents)} documents to existing Pinecone index")
                 self.vector_store.add_documents(documents)
-                logger.info(f"✅ Successfully added {len(documents)} documents to Pinecone")
+                logger.info(f"Added {len(documents)} documents to Pinecone")
         except Exception as e:
             logger.error(f"Error adding documents to vector store: {str(e)}")
             raise
@@ -127,10 +122,7 @@ class VectorStore:
             if self.vector_store is None:
                 logger.warning("No documents in vector store")
                 return []
-            
-
             similar_docs = self.vector_store.similarity_search(query, k=k)
-
             
             return similar_docs
         except Exception as e:
