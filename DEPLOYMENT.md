@@ -90,4 +90,12 @@ PersonalRAGAssistant/
 | `GOOGLE_API_KEY` | Google Gemini API key | Yes |
 | `PINECONE_API_KEY` | Pinecone vector database key | Yes |
 
+## 🔧 **Poetry Detection Prevention**
+
+If Render still tries to use Poetry, the project includes these files to force pip:
+- ✅ `render.yaml` - Explicit pip build commands
+- ✅ `.buildpacks` - Forces Python buildpack
+- ✅ `.python-version` - Python version specification
+- ✅ `runtime.txt` - Backup Python version
+
 That's it! Much simpler than Poetry. 🎉
